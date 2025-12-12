@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21 遊戲（Blackjack）單檔版</title>
+    <title>10點半遊戲單檔版</title>
     <style>
         * {
             margin: 0;
@@ -275,16 +275,18 @@
 <body>
     <div class="container">
         <header>
-            <h1>21 遊戲（Blackjack）單檔版</h1>
+            <h1>10點半遊戲單檔版</h1>
         </header>
 
         <div class="rules">
             <h2>遊戲規則</h2>
             <ul>
-                <li><strong>目標：</strong>點數接近 21 但不超過，且比莊家大</li>
-                <li><strong>牌值：</strong>J、Q、K = 10 點，A = 1 或 11 點（自動選最有利的值）</li>
-                <li><strong>爆牌：</strong>點數超過 21 點直接輸掉</li>
-                <li><strong>莊家規則：</strong>點數 ≤ 16 必須要牌，≥ 17 必須停牌</li>
+                <li><strong>目標：</strong>點數接近 10.5 但不超過</li>
+                <li><strong>牌值：</strong>A、2、3、4、5、6、7、8、9、10 分別為 1 至 10 點，J、Q、K 為半點（0.5）</li>
+                <li><strong>爆牌：</strong>點數超過 10.5 點直接輸掉</li>
+                <li><strong>10點半：</strong>10 加一張公仔牌（J、Q 或 K）= 莊家立賠</li>
+                <li><strong>過五關：</strong>五張牌不爆 = 莊家立賠</li>
+                <li><strong>點數相同：</strong>莊家勝（食夾棍）</li>
             </ul>
         </div>
 
@@ -367,29 +369,36 @@
             }
         }
 
-        // Calculate best score with Ace optimization
+        // Calculate score for 10點半
         function bestScore(hand) {
             let sum = 0;
-            let aces = 0;
 
             for (let card of hand) {
                 if (card.rank === 'A') {
                     sum += 1;
-                    aces++;
                 } else if (['J', 'Q', 'K'].includes(card.rank)) {
-                    sum += 10;
+                    sum += 0.5;
                 } else {
                     sum += parseInt(card.rank);
                 }
             }
 
-            // Try to use Ace as 11 if beneficial
-            while (aces > 0 && sum + 10 <= 21) {
-                sum += 10;
-                aces--;
-            }
-
             return sum;
+        }
+
+        // Check if player has natural 10.5 (10 + face card)
+        function hasNatural105(hand) {
+            if (hand.length !== 2) return false;
+            
+            const hasValue10 = hand.some(card => card.rank === '10');
+            const hasFaceCard = hand.some(card => ['J', 'Q', 'K'].includes(card.rank));
+            
+            return hasValue10 && hasFaceCard;
+        }
+
+        // Check if player has "過五關" (5 cards without busting)
+        function hasFiveCardCharlie(hand) {
+            return hand.length >= 5 && bestScore(hand) <= 10.5;
         }
 
         // Draw a card from deck
@@ -425,23 +434,12 @@
             });
             playerScoreEl.textContent = bestScore(playerHand);
 
-            // Update dealer cards
+            // Update dealer cards - always show all cards in 10點半
             dealerCardsEl.innerHTML = '';
-            if (phase === 'player_turn' && dealerHand.length > 0) {
-                // Show first card
-                dealerCardsEl.appendChild(createCardElement(dealerHand[0]));
-                // Hide second card
-                if (dealerHand.length > 1) {
-                    dealerCardsEl.appendChild(createCardElement(dealerHand[1], true));
-                    dealerScoreEl.textContent = bestScore([dealerHand[0]]);
-                }
-            } else {
-                // Show all dealer cards
-                dealerHand.forEach(card => {
-                    dealerCardsEl.appendChild(createCardElement(card));
-                });
-                dealerScoreEl.textContent = bestScore(dealerHand);
-            }
+            dealerHand.forEach(card => {
+                dealerCardsEl.appendChild(createCardElement(card));
+            });
+            dealerScoreEl.textContent = bestScore(dealerHand);
         }
 
         // Update status message
@@ -485,9 +483,7 @@
             playerHand = [];
             dealerHand = [];
 
-            // Deal initial cards
-            playerHand.push(drawCard());
-            dealerHand.push(drawCard());
+            // Deal initial cards - player gets 1 card, dealer gets 1 card
             playerHand.push(drawCard());
             dealerHand.push(drawCard());
 
@@ -496,7 +492,7 @@
 
             // Update UI
             updateUI();
-            updateStatus('輪到你了');
+            updateStatus('輪到你了，要牌嗎？');
             updateButtons();
         }
 
@@ -510,12 +506,30 @@
             playerHand.push(card);
             updateUI();
 
-            // Check for bust
             const score = bestScore(playerHand);
-            if (score > 21) {
+            
+            // Check for bust
+            if (score > 10.5) {
                 phase = 'finished';
                 updateStatus('你爆牌了，莊家獲勝', 'lose');
                 updateButtons();
+                return;
+            }
+
+            // Check for natural 10.5 (10 + face card)
+            if (hasNatural105(playerHand)) {
+                phase = 'finished';
+                updateStatus('10點半！你贏了！', 'win');
+                updateButtons();
+                return;
+            }
+
+            // Check for 過五關 (5 cards without busting)
+            if (hasFiveCardCharlie(playerHand)) {
+                phase = 'finished';
+                updateStatus('過五關！你贏了！', 'win');
+                updateButtons();
+                return;
             }
         }
 
@@ -535,8 +549,9 @@
         function dealerPlay() {
             let dealerScore = bestScore(dealerHand);
 
-            // Dealer draws until 17 or higher
-            while (dealerScore < 17) {
+            // Dealer strategy: draw until reaching a reasonable score
+            // Usually stops at 8 or higher, or if risk of busting is high
+            while (dealerScore < 8 && dealerScore <= 10.5) {
                 const card = drawCard();
                 if (!card) {
                     determineWinner();
@@ -545,6 +560,9 @@
                 dealerHand.push(card);
                 dealerScore = bestScore(dealerHand);
                 updateUI();
+                
+                // Stop if busted
+                if (dealerScore > 10.5) break;
             }
 
             // Determine winner
@@ -558,16 +576,32 @@
 
             phase = 'finished';
 
-            if (playerScore > 21) {
+            // Player already busted
+            if (playerScore > 10.5) {
                 updateStatus('你爆牌了，莊家獲勝', 'lose');
-            } else if (dealerScore > 21) {
+            } 
+            // Check for player's natural 10.5
+            else if (hasNatural105(playerHand)) {
+                updateStatus('10點半！你贏了！', 'win');
+            }
+            // Check for player's 過五關
+            else if (hasFiveCardCharlie(playerHand)) {
+                updateStatus('過五關！你贏了！', 'win');
+            }
+            // Dealer busted
+            else if (dealerScore > 10.5) {
                 updateStatus('莊家爆牌，你贏了！', 'win');
-            } else if (playerScore > dealerScore) {
+            } 
+            // Compare scores - dealer wins on tie (食夾棍)
+            else if (playerScore > dealerScore) {
                 updateStatus('你贏了！', 'win');
-            } else if (playerScore < dealerScore) {
-                updateStatus('你輸了', 'lose');
-            } else {
-                updateStatus('和局 (Push)', 'push');
+            } else if (playerScore <= dealerScore) {
+                // Ties go to dealer
+                if (playerScore === dealerScore) {
+                    updateStatus('點數相同，莊家勝（食夾棍）', 'lose');
+                } else {
+                    updateStatus('你輸了', 'lose');
+                }
             }
 
             updateButtons();
