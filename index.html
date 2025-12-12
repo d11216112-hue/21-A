@@ -516,8 +516,8 @@
                 return;
             }
 
-            // Check for natural 10.5 (10 + face card)
-            if (hasNatural105(playerHand)) {
+            // Check for natural 10.5 only when player has exactly 2 cards
+            if (playerHand.length === 2 && hasNatural105(playerHand)) {
                 phase = 'finished';
                 updateStatus('10點半！你贏了！', 'win');
                 updateButtons();
@@ -551,7 +551,7 @@
 
             // Dealer strategy: draw until reaching a reasonable score
             // Usually stops at 8 or higher, or if risk of busting is high
-            while (dealerScore < 8 && dealerScore <= 10.5) {
+            while (dealerScore < 8) {
                 const card = drawCard();
                 if (!card) {
                     determineWinner();
@@ -580,14 +580,6 @@
             if (playerScore > 10.5) {
                 updateStatus('你爆牌了，莊家獲勝', 'lose');
             } 
-            // Check for player's natural 10.5
-            else if (hasNatural105(playerHand)) {
-                updateStatus('10點半！你贏了！', 'win');
-            }
-            // Check for player's 過五關
-            else if (hasFiveCardCharlie(playerHand)) {
-                updateStatus('過五關！你贏了！', 'win');
-            }
             // Dealer busted
             else if (dealerScore > 10.5) {
                 updateStatus('莊家爆牌，你贏了！', 'win');
