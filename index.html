@@ -321,7 +321,9 @@
         let playerHand = [];
         let dealerHand = [];
         let phase = 'idle'; // idle, player_turn, dealer_turn, finished
-        let dealerHoleCard = null; // For hidden card implementation
+
+        // Animation delay constant
+        const DEALER_ACTION_DELAY = 500; // milliseconds
 
         // Card suits and ranks
         const suits = [
@@ -526,7 +528,7 @@
             updateUI(); // Reveal dealer's hole card
 
             // Dealer plays
-            setTimeout(() => dealerPlay(), 500);
+            setTimeout(() => dealerPlay(), DEALER_ACTION_DELAY);
         }
 
         // Dealer's turn
@@ -546,7 +548,7 @@
             }
 
             // Determine winner
-            setTimeout(() => determineWinner(), 500);
+            setTimeout(() => determineWinner(), DEALER_ACTION_DELAY);
         }
 
         // Determine winner
