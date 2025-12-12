@@ -539,7 +539,7 @@
 
             phase = 'dealer_turn';
             updateButtons();
-            updateUI(); // Reveal dealer's hole card
+            updateUI(); // Update display before dealer plays
 
             // Dealer plays
             setTimeout(() => dealerPlay(), DEALER_ACTION_DELAY);
@@ -587,8 +587,8 @@
             // Compare scores - dealer wins on tie (食夾棍)
             else if (playerScore > dealerScore) {
                 updateStatus('你贏了！', 'win');
-            } else if (playerScore <= dealerScore) {
-                // Ties go to dealer
+            } else {
+                // Ties go to dealer (食夾棍) or dealer has higher score
                 if (playerScore === dealerScore) {
                     updateStatus('點數相同，莊家勝（食夾棍）', 'lose');
                 } else {
