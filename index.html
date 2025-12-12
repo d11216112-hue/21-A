@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21 遊戲（Blackjack）單檔版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+            background: linear-gradient(135deg, #0f5132 0%, #146c43 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #0f5132;
+        }
+
+        h1 {
+            color: #0f5132;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .rules {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .rules h2 {
+            color: #0f5132;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .rules ul {
+            margin-left: 20px;
+        }
+
+        .rules li {
+            margin-bottom: 5px;
+        }
+
+        .game-area {
+            margin: 20px 0;
+        }
+
+        .hand-section {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .hand-section h3 {
+            color: #0f5132;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score {
+            font-size: 20px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 100px;
+            align-items: center;
+        }
+
+        .card {
+            width: 60px;
+            height: 85px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .card.red {
+            color: #dc3545;
+        }
+
+        .card.black {
+            color: #000;
+        }
+
+        .card.hidden {
+            background: linear-gradient(135deg, #0f5132 0%, #146c43 100%);
+            border-color: #0f5132;
+            position: relative;
+        }
+
+        .card.hidden::before {
+            content: "🂠";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            color: white;
+        }
+
+        .card-top {
+            text-align: left;
+        }
+
+        .card-bottom {
+            text-align: right;
+            transform: rotate(180deg);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        button.primary {
+            background: #0f5132;
+            color: white;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background: #146c43;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button.secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background: #5c636a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button.danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        button.danger:hover:not(:disabled) {
+            background: #bb2d3b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #664d03;
+            margin: 20px 0;
+        }
+
+        .status.win {
+            background: #d1e7dd;
+            border-color: #198754;
+            color: #0f5132;
+        }
+
+        .status.lose {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #842029;
+        }
+
+        .status.push {
+            background: #cfe2ff;
+            border-color: #0d6efd;
+            color: #084298;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 22px;
+            }
+
+            .rules {
+                font-size: 13px;
+            }
+
+            .card {
+                width: 50px;
+                height: 70px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 375px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .card {
+                width: 45px;
+                height: 65px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>21 遊戲（Blackjack）單檔版</h1>
+        </header>
+
+        <div class="rules">
+            <h2>遊戲規則</h2>
+            <ul>
+                <li><strong>目標：</strong>點數接近 21 但不超過，且比莊家大</li>
+                <li><strong>牌值：</strong>J、Q、K = 10 點，A = 1 或 11 點（自動選最有利的值）</li>
+                <li><strong>爆牌：</strong>點數超過 21 點直接輸掉</li>
+                <li><strong>莊家規則：</strong>點數 ≤ 16 必須要牌，≥ 17 必須停牌</li>
+            </ul>
+        </div>
+
+        <div class="status" id="status">點擊「新局」開始遊戲</div>
+
+        <div class="game-area">
+            <div class="hand-section">
+                <h3>
+                    <span>莊家 (Dealer)</span>
+                    <span class="score" id="dealer-score">0</span>
+                </h3>
+                <div class="cards" id="dealer-cards"></div>
+            </div>
+
+            <div class="hand-section">
+                <h3>
+                    <span>玩家 (Player)</span>
+                    <span class="score" id="player-score">0</span>
+                </h3>
+                <div class="cards" id="player-cards"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="primary" id="new-game-btn">新局</button>
+            <button class="secondary" id="hit-btn" disabled>要牌 (Hit)</button>
+            <button class="danger" id="stand-btn" disabled>停牌 (Stand)</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+        let phase = 'idle'; // idle, player_turn, dealer_turn, finished
+        let dealerHoleCard = null; // For hidden card implementation
+
+        // Card suits and ranks
+        const suits = [
+            { symbol: '♠', color: 'black' },
+            { symbol: '♥', color: 'red' },
+            { symbol: '♦', color: 'red' },
+            { symbol: '♣', color: 'black' }
+        ];
+        const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        // DOM elements
+        const newGameBtn = document.getElementById('new-game-btn');
+        const hitBtn = document.getElementById('hit-btn');
+        const standBtn = document.getElementById('stand-btn');
+        const statusEl = document.getElementById('status');
+        const playerCardsEl = document.getElementById('player-cards');
+        const dealerCardsEl = document.getElementById('dealer-cards');
+        const playerScoreEl = document.getElementById('player-score');
+        const dealerScoreEl = document.getElementById('dealer-score');
+
+        // Initialize deck with 52 cards
+        function createDeck() {
+            const newDeck = [];
+            for (let suit of suits) {
+                for (let rank of ranks) {
+                    newDeck.push({
+                        suit: suit.symbol,
+                        rank: rank,
+                        color: suit.color
+                    });
+                }
+            }
+            return newDeck;
+        }
+
+        // Fisher-Yates shuffle algorithm
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Calculate best score with Ace optimization
+        function bestScore(hand) {
+            let sum = 0;
+            let aces = 0;
+
+            for (let card of hand) {
+                if (card.rank === 'A') {
+                    sum += 1;
+                    aces++;
+                } else if (['J', 'Q', 'K'].includes(card.rank)) {
+                    sum += 10;
+                } else {
+                    sum += parseInt(card.rank);
+                }
+            }
+
+            // Try to use Ace as 11 if beneficial
+            while (aces > 0 && sum + 10 <= 21) {
+                sum += 10;
+                aces--;
+            }
+
+            return sum;
+        }
+
+        // Draw a card from deck
+        function drawCard() {
+            if (deck.length === 0) {
+                updateStatus('牌堆不足，請開新局');
+                return null;
+            }
+            return deck.pop();
+        }
+
+        // Create card element for display
+        function createCardElement(card, hidden = false) {
+            const cardEl = document.createElement('div');
+            cardEl.className = `card ${hidden ? 'hidden' : card.color}`;
+            
+            if (!hidden) {
+                cardEl.innerHTML = `
+                    <div class="card-top">${card.rank}${card.suit}</div>
+                    <div class="card-bottom">${card.rank}${card.suit}</div>
+                `;
+            }
+            
+            return cardEl;
+        }
+
+        // Update UI
+        function updateUI() {
+            // Update player cards
+            playerCardsEl.innerHTML = '';
+            playerHand.forEach(card => {
+                playerCardsEl.appendChild(createCardElement(card));
+            });
+            playerScoreEl.textContent = bestScore(playerHand);
+
+            // Update dealer cards
+            dealerCardsEl.innerHTML = '';
+            if (phase === 'player_turn' && dealerHand.length > 0) {
+                // Show first card
+                dealerCardsEl.appendChild(createCardElement(dealerHand[0]));
+                // Hide second card
+                if (dealerHand.length > 1) {
+                    dealerCardsEl.appendChild(createCardElement(dealerHand[1], true));
+                    dealerScoreEl.textContent = bestScore([dealerHand[0]]);
+                }
+            } else {
+                // Show all dealer cards
+                dealerHand.forEach(card => {
+                    dealerCardsEl.appendChild(createCardElement(card));
+                });
+                dealerScoreEl.textContent = bestScore(dealerHand);
+            }
+        }
+
+        // Update status message
+        function updateStatus(message, type = '') {
+            statusEl.textContent = message;
+            statusEl.className = 'status';
+            if (type) {
+                statusEl.classList.add(type);
+            }
+        }
+
+        // Update button states
+        function updateButtons() {
+            switch (phase) {
+                case 'idle':
+                    hitBtn.disabled = true;
+                    standBtn.disabled = true;
+                    newGameBtn.disabled = false;
+                    break;
+                case 'player_turn':
+                    hitBtn.disabled = false;
+                    standBtn.disabled = false;
+                    newGameBtn.disabled = false;
+                    break;
+                case 'dealer_turn':
+                case 'finished':
+                    hitBtn.disabled = true;
+                    standBtn.disabled = true;
+                    newGameBtn.disabled = false;
+                    break;
+            }
+        }
+
+        // Start new game
+        function newGame() {
+            // Create and shuffle deck
+            deck = createDeck();
+            shuffleDeck(deck);
+
+            // Reset hands
+            playerHand = [];
+            dealerHand = [];
+
+            // Deal initial cards
+            playerHand.push(drawCard());
+            dealerHand.push(drawCard());
+            playerHand.push(drawCard());
+            dealerHand.push(drawCard());
+
+            // Set phase
+            phase = 'player_turn';
+
+            // Update UI
+            updateUI();
+            updateStatus('輪到你了');
+            updateButtons();
+        }
+
+        // Player hits
+        function hit() {
+            if (phase !== 'player_turn') return;
+
+            const card = drawCard();
+            if (!card) return;
+
+            playerHand.push(card);
+            updateUI();
+
+            // Check for bust
+            const score = bestScore(playerHand);
+            if (score > 21) {
+                phase = 'finished';
+                updateStatus('你爆牌了，莊家獲勝', 'lose');
+                updateButtons();
+            }
+        }
+
+        // Player stands
+        function stand() {
+            if (phase !== 'player_turn') return;
+
+            phase = 'dealer_turn';
+            updateButtons();
+            updateUI(); // Reveal dealer's hole card
+
+            // Dealer plays
+            setTimeout(() => dealerPlay(), 500);
+        }
+
+        // Dealer's turn
+        function dealerPlay() {
+            let dealerScore = bestScore(dealerHand);
+
+            // Dealer draws until 17 or higher
+            while (dealerScore < 17) {
+                const card = drawCard();
+                if (!card) {
+                    determineWinner();
+                    return;
+                }
+                dealerHand.push(card);
+                dealerScore = bestScore(dealerHand);
+                updateUI();
+            }
+
+            // Determine winner
+            setTimeout(() => determineWinner(), 500);
+        }
+
+        // Determine winner
+        function determineWinner() {
+            const playerScore = bestScore(playerHand);
+            const dealerScore = bestScore(dealerHand);
+
+            phase = 'finished';
+
+            if (playerScore > 21) {
+                updateStatus('你爆牌了，莊家獲勝', 'lose');
+            } else if (dealerScore > 21) {
+                updateStatus('莊家爆牌，你贏了！', 'win');
+            } else if (playerScore > dealerScore) {
+                updateStatus('你贏了！', 'win');
+            } else if (playerScore < dealerScore) {
+                updateStatus('你輸了', 'lose');
+            } else {
+                updateStatus('和局 (Push)', 'push');
+            }
+
+            updateButtons();
+        }
+
+        // Event listeners
+        newGameBtn.addEventListener('click', newGame);
+        hitBtn.addEventListener('click', hit);
+        standBtn.addEventListener('click', stand);
+
+        // Initialize
+        updateButtons();
+    </script>
+</body>
+</html>
